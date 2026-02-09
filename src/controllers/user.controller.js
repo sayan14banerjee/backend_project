@@ -5,14 +5,20 @@ import {uploadOnCloudinary} from '../utils/cloudinary.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 
 const registerUser = asyncHandler(async (req, res) => {
-    // get user data from frontend
-    const {fullName, email, username, password} = req.body;
-    console.log(req.body);
+    // get user data from frontend and normalize common variants
+    const raw = req.body || {};
+    console.log(raw);
+    const fullName = raw.fullName ?? raw.fullname ?? "";
+    const email = raw.email ?? "";
+    const username = raw.username ?? raw.usename ?? "";
+    const password = raw.password ?? "";
+
     // validation - not empty
     if (
-        [fullName, email, username, password].some((field) => 
-            field?.trim() === "")
-    ){
+        [fullName, email, username, password].some((field) =>
+            (field ?? "").toString().trim() === ""
+        )
+    ) {
         throw new ApiError(400, "All fields are required");
     }
     // check if user already exists : username, email
@@ -39,14 +45,15 @@ const registerUser = asyncHandler(async (req, res) => {
     if (!avatar) {
         throw new ApiError(500, "Failed to upload avatar image");
     }
-    
+    console.log("Avatar uploaded to Cloudinary:", avatar.url);
+    console.log("Cover image uploaded to Cloudinary:", coverImage?.url);
     // create user object - create entry db
     const user = await User.create({
         fullName,
         avatar: avatar.url,
         coverImage: coverImage?.url || "",
         email,
-        username: username.toLowerCase(),
+        username: (username ?? "").toLowerCase(),
         password
     });
     

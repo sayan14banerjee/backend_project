@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema({
         trim: true,
         lowercase: true,
     },
-    fullname: {
+    fullName: {
         type: String,
         required: true,
         trim: true,
@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema({
         type: String, //cloudnary public_id
         required: true,
     },
-    coverimage:{
+    coverImage:{
         type: String, //cloudnary public_id
     },
     watchhistory: [{
@@ -44,10 +44,9 @@ const userSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-userSchema.pre("save", async function (next){
-    if(!this.isModified("password")) return next();
+userSchema.pre("save", async function (){
+    if(!this.isModified("password")) return;
     this.password = await bcrypt.hash(this.password, 10);
-    next();
 })
 
 userSchema.methods.isPasswordCorrect = async function (password) {
@@ -60,7 +59,7 @@ userSchema.methods.generateAccessToken = function () {
             userId: this._id,
             username: this.username,
             email: this.email,
-            fullname: this.fullname
+            fullName: this.fullName
          },
         process.env.ACCESS_TOKEN_SECRET,
         { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN }

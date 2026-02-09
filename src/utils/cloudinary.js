@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from "cloudinary";
+﻿import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 import path from "path";
 
@@ -7,6 +7,16 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+if (
+  !process.env.CLOUDINARY_CLOUD_NAME ||
+  !process.env.CLOUDINARY_API_KEY ||
+  !process.env.CLOUDINARY_API_SECRET
+) {
+  console.warn(
+    "Cloudinary environment variables are missing or misnamed. Ensure .env contains CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET"
+  );
+}
 
 const uploadOnCloudinary = async (localFilePath) => {
   try {
@@ -22,13 +32,5 @@ const uploadOnCloudinary = async (localFilePath) => {
     throw error;
   }
 };
-
-const uploadResult = await cloudinary.uploader
-  .upload(localFilePath, {
-    public_id: path.basename(localFilePath, path.extname(localFilePath)),
-  })
-  .catch((error) => {
-    console.log(error);
-  });
 
 export { uploadOnCloudinary };
