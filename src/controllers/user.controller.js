@@ -174,25 +174,25 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
     // get refresh token from cookies
-    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken || req.headers("Authorization")?.replace("Bearer ", "");
-    if (!refreshToken) {
+    const incommingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken || req.headers("Authorization")?.replace("Bearer ", "");
+    if (!incommingRefreshToken) {
         throw new ApiError(401, "Unauthorized: No refresh token provided");
     }
     // verify refresh token
     try {
-        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        const decoded = jwt.verify(incommingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
 
         // check if refresh token is valid and exists in db
         const user = await User.findById(decoded.userId);
-        if (!user || user.refreshtoken !== refreshToken) {
+        if (!user || user.refreshtoken !== incommingRefreshToken) {
             throw new ApiError(401, "Unauthorized: Invalid refresh token");
         }
 
-        if (refreshToken !== user.refreshtoken) {
+        if (incommingRefreshToken !== user.refreshtoken) {
         throw new ApiError(401, "Unauthorized: Refresh token mismatch");
         }
         // generate new access token
-        options = {
+        const options = {
             httpOnly: true,
             secure: true, // Set to true in production (requires HTTPS)
         }
