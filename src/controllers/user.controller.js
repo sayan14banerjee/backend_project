@@ -4,6 +4,7 @@ import {User} from '../models/user.model.js';
 import {uploadOnCloudinary} from '../utils/cloudinary.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 
 const genarateAccessAndRefreshTokens = async (userId) => {
     try {
@@ -431,50 +432,37 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 });
 
 const getWatchHistory = asyncHandler(async (req, res) => {
-    const user = await user.aggregate([
+    const pipeline = [
+        { $match: { _id: new mongoose.Types.ObjectId(req.user._id) } },
         {
-            $match: {
-                _id: new mongoose.Types.ObjectId(req.user._id)
-            },
-
             $lookup: {
-                from: "Video",
-                localField: "watchHistory",
-                foreignField: "_id",
-                as: "watchHistory",
-                pipeline: [{
-                    $lookup: {
-                        from: "User",
-                        localField: "owner",
-                        foreignField: "_id",
-                        as: "owner",
-                        pipeline: [{
-                            $project: {
-                                fullName: 1,
-                                username: 1,
-                                avatar: 1,
-                            } 
-                        }]
-                    }
-                },
-                {
-                    $addFields: {
-                        owner: {
-                            $first: "$owner"
-                        }
-                }}
-            ]
-            },
+                from: 'videos',
+                let: { watch: '$watchhistory' },
+                pipeline: [
+                    { $match: { $expr: { $in: ['$_id', '$$watch'] } } },
+                    { $lookup: {
+                        from: 'users',
+                        localField: 'owner',
+                        foreignField: '_id',
+                        as: 'owner'
+                    }},
+                    { $addFields: { owner: { $first: '$owner' } } }
+                ],
+                as: 'watchHistory'
+            }
+        },
+        { $project: { watchHistory: 1, _id: 0 } }
+    ];
 
+    const result = await User.aggregate(pipeline);
 
-        }
-    ]);
+    const watchHistory = result?.[0]?.watchHistory || [];
 
     return res.status(200)
     .json(new ApiResponse(
         200,
-        user[0].watchHistory,
-        "Watch history fetched successfully"
+        watchHistory,
+        'Watch history fetched successfully'
     ));
 
 });
