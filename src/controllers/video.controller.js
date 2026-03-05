@@ -129,6 +129,11 @@ const updateVideoDetails = asyncHandler(async (req, res) => {
     if (!title || !description) {
         throw new ApiError(400, "Title and description are required");
     }
+
+    if (video.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "You are not authorized to update this video");
+    }    
+
     const video = await Video.findByIdAndUpdate(
         videoId,
         {
@@ -152,11 +157,59 @@ const updateVideoDetails = asyncHandler(async (req, res) => {
         video));
 });
 
+const deleteVideo = asyncHandler(async (req, res) => {
+    const { videoId } = req.params
+    //TODO: delete video
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+        throw new ApiError(400, "Invalid video ID");
+    }
 
+    const video = await Video.findById(videoId);
+    if (!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    if (video.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "You are not authorized to delete this video");
+    }
+    await Video.findByIdAndDelete(videoId);
+    return res.status(200)
+    .json(new ApiResponse(
+        200,
+        "Video deleted successfully",
+        {}
+    ));
+});
+
+const togglePublishStatus = asyncHandler(async (req, res) => {
+    const { videoId } = req.params
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+        throw new ApiError(400, "Invalid video ID");
+    }
+
+    const video = await Video.findById(videoId);
+    if (!video) {
+        throw new ApiError(404, "Video not found");
+    }
+    if (video.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "You are not authorized to update this video");
+    }
+    video.isPublished = !video.isPublished;
+    await video.save();
+    return res.status(200)
+    .json(new ApiResponse(
+        200,
+        `Video ${video.isPublished ? "published" : "unpublished"} successfully`,
+        video
+    ));
+
+});
 
 export { 
     uploadVideo,
     getMyVideos,
     updateVideoDetails,
-    getVideoById
+    getVideoById,
+    deleteVideo,
+    togglePublishStatus
  };
